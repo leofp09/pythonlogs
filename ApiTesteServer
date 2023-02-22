@@ -1,0 +1,101 @@
+from flask import Flask, request, jsonify
+
+import logging
+import google.cloud.logging
+from google.cloud.logging.handlers import CloudLoggingHandler
+from google.cloud import logging as gcl
+
+app = Flask(__name__)
+
+@app.route('/')
+def homepage():
+  return 'api no ar'
+  
+@app.route('/sendlog', methods=['POST','GET'])
+def send_log():
+    content = request.get_json()
+    
+    if (content.get('logname') != None):
+        log_name = content.get('logname')
+    else:
+        log_name = "SNITCH"
+
+    gcloud_logging_client = google.cloud.logging.Client()
+    gcloud_logging_handler = CloudLoggingHandler(
+    gcloud_logging_client, name=log_name)
+    stream_handler = logging.StreamHandler()
+    logger = logging.getLogger(log_name)
+
+  
+
+    logger.addHandler(gcloud_logging_handler)
+    logger.addHandler(stream_handler)
+   
+
+    '''match content['level']:
+        case 'debug': logger.log(msg=content['text'],level=100,)
+        case 'info': logger.info(content['text'])
+        case 'notice': logger.log(msg=content['text'],level=300)
+        case 'warning': logger.warning(content['text'])
+        case 'error': logger.error(content['text'])
+        case 'critical': logger.critical(content['text'])
+        case 'alert': logger.log(msg=content['text'],level=700)
+        case 'emergency': logger.log(msg=content['text'],level=800)
+
+   ''' 
+    if content['level'] == 'debug' : loglevel = 100
+    elif content['level'] == 'info' : loglevel = 200
+    elif content['level'] == 'notice' : loglevel = 300
+    elif content['level'] == 'warning' : loglevel = 400
+    elif content['level'] == 'error' : loglevel = 500
+    elif content['level'] == 'critical' : loglevel = 600
+    elif content['level'] == 'alert' : loglevel = 700
+    elif content['level'] == 'emergency' : loglevel = 800
+    else: loglevel = 0
+
+    logger.log(msg=content['text'],level=loglevel)
+
+        
+
+
+    return jsonify(content)
+
+@app.route('/listentries', methods=['POST','GET'])
+def list_entries():
+    content = request.get_json()
+    logger_name = content['logname']
+
+    logging_client = gcl.Client()
+    logger = logging_client.logger(logger_name)
+
+    lista = []
+    for entry in logger.list_entries(filter_="severity>=EMERGENCY"):
+        timestamp = entry.timestamp.isoformat()
+        lista.append(timestamp + "  " + entry.payload + "  " + entry.severity)
+        
+    
+    entries = {
+            logger.name: lista
+        }
+   
+    return jsonify(entries)
+
+@app.route('/delete', methods=['POST','GET'])
+def delete_logger():
+    content = request.get_json()
+    logger_name = content['logname']
+   
+    logging_client = gcl.Client()
+    logger = logging_client.logger(logger_name)
+
+    logger.delete()
+
+    deleted = {
+        "deleted": logger.name
+    }
+    return jsonify(deleted)
+   
+
+
+
+app.run(host= '0.0.0.0')

@@ -1,9 +1,15 @@
 from flask import Flask, request, jsonify
 
 import logging
-import google.cloud.logging
-from google.cloud.logging.handlers import CloudLoggingHandler
 from google.cloud import logging as gcl
+
+log_name = "SNITCH"
+gcloud_logging_client = gcl.Client()
+gcloud_logging_handler = gcl.handlers.CloudLoggingHandler(gcloud_logging_client, name=log_name)
+stream_handler = logging.StreamHandler()
+logger = logging.getLogger(log_name)
+logger.addHandler(stream_handler)
+logger.addHandler(gcloud_logging_handler)
 
 app = Flask(__name__)
 
@@ -15,34 +21,6 @@ def homepage():
 def send_log():
     content = request.get_json()
     
-    if (content.get('logname') != None):
-        log_name = content.get('logname')
-    else:
-        log_name = "SNITCH"
-
-    gcloud_logging_client = google.cloud.logging.Client()
-    gcloud_logging_handler = CloudLoggingHandler(
-    gcloud_logging_client, name=log_name)
-    stream_handler = logging.StreamHandler()
-    logger = logging.getLogger(log_name)
-
-  
-
-    logger.addHandler(gcloud_logging_handler)
-    logger.addHandler(stream_handler)
-   
-
-    '''match content['level']:
-        case 'debug': logger.log(msg=content['text'],level=100,)
-        case 'info': logger.info(content['text'])
-        case 'notice': logger.log(msg=content['text'],level=300)
-        case 'warning': logger.warning(content['text'])
-        case 'error': logger.error(content['text'])
-        case 'critical': logger.critical(content['text'])
-        case 'alert': logger.log(msg=content['text'],level=700)
-        case 'emergency': logger.log(msg=content['text'],level=800)
-
-   ''' 
     if content['level'] == 'debug' : loglevel = 100
     elif content['level'] == 'info' : loglevel = 200
     elif content['level'] == 'notice' : loglevel = 300
@@ -53,11 +31,12 @@ def send_log():
     elif content['level'] == 'emergency' : loglevel = 800
     else: loglevel = 0
 
+    
+
     logger.log(msg=content['text'],level=loglevel)
+    print('a')
 
-        
-
-
+  
     return jsonify(content)
 
 @app.route('/listentries', methods=['POST','GET'])
@@ -93,7 +72,7 @@ def delete_logger():
     deleted = {
         "deleted": logger.name
     }
-    return jsonify(deleted)
+    
    
 
 

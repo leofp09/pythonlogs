@@ -4,8 +4,8 @@ locallink = 'http://localhost:5000/sendlog'
 
 
 log = {
-    "level":"alert",
-    "text":"TTTaT",
+    "level":"warning",
+    "text":"asas",
     
     
 }

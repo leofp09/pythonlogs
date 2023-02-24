@@ -34,7 +34,6 @@ def send_log():
     
 
     logger.log(msg=content['text'],level=loglevel)
-    print('a')
 
   
     return jsonify(content)
@@ -72,7 +71,7 @@ def delete_logger():
     deleted = {
         "deleted": logger.name
     }
-    
+    return jsonify(deleted)
    
 
 
